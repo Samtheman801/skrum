@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <fstream>
 #include <string>
+#include <vector>
 #include <curl/curl.h>
 #include "pugixml.hpp"
 using namespace std;
@@ -11,10 +12,10 @@ char const END[2] = "1";
 
 //added stuff
 string selectedGameID;
-
+string linkStatsDec;
 
 //func declaration
-void curlSteamStats(string selectedGame, string selectedUserID);
+string curlSteamStats(string selectedGame, string selectedUserID);
 
 //callback function to write data to raw_html
 size_t writeFunction(void *contents, size_t size, size_t nmemb, string *raw_html) {
@@ -115,7 +116,6 @@ int main() {
     }
     case 3:{
       cout<<"See you soon!";
-      curlSteamStats("csgo", "Samtheman801");                                                         // yo idiot
       return 0;
     }
     default:{
@@ -152,6 +152,21 @@ int main() {
           inputCSGO>>playerRank;
         }
         inputCSGO.close();
+
+        cout << "Link Steam Stats? [y/n]: ";
+        cin >> linkStatsDec;
+        if (linkStatsDec.compare("y") == 0) {
+          inputCSGO.open("csgo.txt");
+          inputCSGO>>playerProfile;
+          inputCSGO>>playerRank;
+          cout<<"Player\tSkill\tHours\n";
+          while (playerProfile!=END){
+            cout<<playerProfile<<"\t"<<playerRank<< "\t" << curlSteamStats("csgo", playerProfile) << endl;
+            inputCSGO>>playerProfile;
+            inputCSGO>>playerRank;
+          }
+        inputCSGO.close();
+        }
         return 0;
       }
       else if (gamechoice==2){
@@ -167,6 +182,21 @@ int main() {
           inputPUBG>>playerRank;
         }
         inputPUBG.close();
+        
+        cout << "Link Steam Stats? [y/n]: ";
+        cin >> linkStatsDec;
+        if (linkStatsDec.compare("y") == 0) {
+          inputPUBG.open("csgo.txt");
+          inputPUBG>>playerProfile;
+          inputPUBG>>playerRank;
+          cout<<"Player\tSkill\tHours\n";
+          while (playerProfile!=END){
+            cout<<playerProfile<<"\t"<<playerRank<< "\t" << curlSteamStats("pubg", playerProfile) << endl;
+            inputPUBG>>playerProfile;
+            inputPUBG>>playerRank;
+          }
+        inputPUBG.close();
+        }
         return 0;
       }
       else if (gamechoice==3){
@@ -182,6 +212,22 @@ int main() {
           inputRL>>playerRank;
         }
         inputRL.close();
+
+        cout << "Link Steam Stats? [y/n]: ";
+        cin >> linkStatsDec;
+        if (linkStatsDec.compare("y") == 0) {
+          inputRL.open("rl.txt");
+          inputRL>>playerProfile;
+          inputRL>>playerRank;
+          cout<<"Player\tSkill\tHours\n";
+          while (playerProfile!=END){
+            cout<<playerProfile<<"\t"<<playerRank<< "\t" << curlSteamStats("rl", playerProfile) << endl;
+            inputRL>>playerProfile;
+            inputRL>>playerRank;
+          }
+        inputRL.close();
+        }
+
         return 0;
       }
       else{
@@ -197,7 +243,7 @@ int main() {
       cin>>gamechoice;
       if (gamechoice==1){
         ofstream outputCSGO;
-        outputCSGO.open("csgo.txt");
+        outputCSGO.open("csgo.txt",ios_base::app);
         cout<<"Please input your current rank (no spaces!): ";
         cin>>gamerank;
         playerProfile = username+"\t"+gamerank;
@@ -223,7 +269,7 @@ int main() {
       }
       else if (gamechoice==2){
         ofstream outputPUBG;
-        outputPUBG.open("pubg.txt");
+        outputPUBG.open("pubg.txt",ios_base::app);
         cout<<"Please input your current rank(no spaces!): ";
         cin>>gamerank;
         playerProfile = username+"\t"+gamerank;
@@ -249,7 +295,7 @@ int main() {
       }
       else if (gamechoice==3){
         ofstream outputRL;
-        outputRL.open("rl.txt");
+        outputRL.open("rl.txt",ios_base::app);
         cout<<"Please input your current rank(no spaces!): ";
         cin>>gamerank;
         playerProfile = username+"\t"+gamerank;
@@ -285,7 +331,7 @@ int main() {
   }
 }
 
-void curlSteamStats(string selectedGame, string selectedUserID) {
+string curlSteamStats(string selectedGame, string selectedUserID) {
     /* build url to curl...
 
     URL Format
@@ -318,7 +364,7 @@ void curlSteamStats(string selectedGame, string selectedUserID) {
     CURLcode res;
 
     //cURL CONFIGURATION
-    curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);                    //verbose output
+    //curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);                    //verbose output
     curl_easy_setopt(curl, CURLOPT_URL, statURL);                   //normal dns request
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeFunction);   //callback for writing data
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &raw_html);           //write data to string raw_html
@@ -330,22 +376,30 @@ void curlSteamStats(string selectedGame, string selectedUserID) {
 
     ofstream writeXML;
     string file = selectedUserID + selectedGame + ".xml";
+    const char *fileChar = file.c_str();
     writeXML.open(file);
     writeXML << raw_html << endl;
 
-    pugi::xml_document doc;
-    pugi::xml_node tools = doc.child("Profile").child("Tools");
-    auto root = doc.append_child("MyRoot");
-    pugi::xml_parse_result result = doc.load_file("Samtheman801csgo.xml");
-    std::cout << "Load result: " << result.description() << endl;
 
-    for (pugi::xml_node tool = tools.first_child(); tool; tool = tool.next_sibling()) {
-        cout << "Tool:";
-        for (pugi::xml_attribute attr = tool.first_attribute(); attr; attr = attr.next_attribute()) {
-            std::cout << " " << attr.name() << "=" << attr.value();
-        }
-    std::cout << std::endl;
+    
+    pugi::xml_document doc;
+    doc.load_file(fileChar);
+    pugi::xpath_query hoursQ("/playerstats/stats/hoursPlayed/text()");
+    pugi::xpath_node_set xpathHoursPlayed = doc.select_nodes(hoursQ);
+    
+    for (pugi::xpath_node test : xpathHoursPlayed) {
+      pugi::xml_node hoursPlayed = test.node();
+      pugi::xml_node hours = hoursPlayed.select_node(hoursQ).node();
+      return hours.value();
+      //cout << hours.value() << endl;
     }
 
-    //https://pugixml.org/docs/manual.html#access
+    //achievements are scuffed by valve and also don't matter lol
+    //pugi::xpath_query achievementsQ("/playerstats/achievements/text()");
+    //pugi::xpath_node_set xpathAchievements = doc.select_nodes(achievementsQ);
+    // for (pugi::xpath_node test : xpathAchievements) {
+    //   pugi::xml_node achievementsTest = test.node();
+    //   pugi::xml_node achievements = achievementsTest.select_node(achievementsQ).node();
+    //   cout << achievements.value() << endl;
+    // }
 }
