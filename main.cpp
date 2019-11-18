@@ -3,7 +3,7 @@
 #include <fstream>
 #include <string>
 #include <curl/curl.h>
-#include "/home/samuel/Programming/CPP/Skrum/pugixml.hpp"
+#include "pugixml.hpp"
 using namespace std;
 int menuC1, menuC2, gamechoice; 
 string username, password, loginUsername, loginPassword, playerProfile, playerRank, line, gamerank;
