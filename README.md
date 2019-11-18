@@ -1,4 +1,3 @@
 # skrum
 
-install libcurl
-install pugixml
+depends on libcurl and pugixml
